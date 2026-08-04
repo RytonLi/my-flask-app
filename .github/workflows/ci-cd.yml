@@ -126,7 +126,7 @@ jobs:
     environment:
       name: production
       # 首次部署后如果实际地址不是这个，改成 Render 控制台里的地址即可
-      url: https://my-flask-app.onrender.com
+      url: https://my-flask-app-iy7n.onrender.com
     
     steps:
       - name: 触发 Render 部署
