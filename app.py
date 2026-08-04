@@ -15,9 +15,9 @@ def health():
 
 @app.route("/api/time")
 def get_time():
-    from datetime import datetime
+    from datetime import UTC, datetime
 
-    current_time = datetime.now().isoformat()
+    current_time = datetime.now(UTC).isoformat()
     return jsonify({"current_time": current_time})
 
 

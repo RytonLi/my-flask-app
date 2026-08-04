@@ -7,3 +7,4 @@ htmlcov/
 .coverage
 coverage.xml
 tests/
+.venv/

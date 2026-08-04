@@ -1,22 +1,23 @@
 FROM python:3.12-slim
 
-# 设置工作目录
+# 从 uv 官方镜像拷入 uv / uvx 两个可执行文件
+COPY --from=ghcr.io/astral-sh/uv:0.12.1 /uv /uvx /bin/
+
 WORKDIR /app
 
-# 安装依赖
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# 先复制依赖声明，依赖没变时能命中 Docker 层缓存
+COPY pyproject.toml uv.lock ./
 
-# 复制代码
+# --frozen：直接用 uv.lock，不重新解析
+# --no-dev：生产镜像不装 pytest 等开发依赖
+RUN uv sync --frozen --no-dev
+
+# 再复制全部代码
 COPY . .
 
 RUN useradd -m appuser
 USER appuser
 
-# 暴露端口
 EXPOSE 5000
 
-# 运行应用
-# 优先使用环境变量 PORT（Render 等平台会自动注入，默认 10000），
-# 本地没有该变量时回退到 5000 端口，保证本地 docker run -p 5000:5000 依然可用。
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-5000} app:app"]
+CMD ["uv", "run", "gunicorn", "--bind", "0.0.0.0:${PORT:-5000}", "app:app"]

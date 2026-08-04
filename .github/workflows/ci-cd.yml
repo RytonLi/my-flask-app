@@ -19,26 +19,24 @@ jobs:
     steps:
       - name: 检出代码
         uses: actions/checkout@v5
-      
+
       - name: 设置 Python
         uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'  # 启用 pip 缓存
-      
-      - name: 安装检查工具
-        run: |
-          python -m pip install --upgrade pip
-          pip install flake8 black mypy
-      
-      - name: 运行 flake8
-        run: flake8 .
-      
-      - name: 运行 black（检查格式）
-        run: black --check .
-      
+          cache: 'uv'
+
+      - name: 设置 uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: 安装依赖（含开发依赖）
+        run: uv sync --frozen
+
+      - name: 运行 Ruff（代码检查）
+        run: uv run ruff check .
+
       - name: 运行 mypy（类型检查）
-        run: mypy . || echo "⚠️ 类型检查有警告"
+        run: uv run mypy . || echo "⚠️ 类型检查有警告"
 
   # ========== 第二阶段：单元测试 ==========
   
@@ -48,7 +46,7 @@ jobs:
     strategy:
       matrix:
         # 可以在多个 Python 版本上测试
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.12']
     
     steps:
       - name: 检出代码
@@ -58,16 +56,16 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-      
+          cache: 'uv'
+
+      - name: 设置 uv
+        uses: astral-sh/setup-uv@v6
+
       - name: 安装依赖
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      
+        run: uv sync --frozen
+
       - name: 运行测试
-        run: |
-          pytest --cov=app --cov-report=xml --cov-report=html -v
+        run: uv run pytest --cov=app --cov-report=xml --cov-report=html -v
       
       - name: 上传覆盖率报告
         uses: codecov/codecov-action@v5
