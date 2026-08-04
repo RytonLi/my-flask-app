@@ -113,35 +113,30 @@ jobs:
           cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/my-flask-app:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/my-flask-app:buildcache,mode=max
 
-  # ========== 第四阶段：部署（示例：部署到服务器）==========
+  # ========== 第四阶段：部署（Render，代替自建服务器）==========
+  # Render 会读取仓库根目录的 render.yaml（Blueprint）创建服务，
+  # 并用仓库里的 Dockerfile 构建镜像，不需要我们提供任何服务器。
+  # 本阶段向 Render 的 Deploy Hook 发一个请求，触发一次构建+部署。
   
   deploy:
-    name: 部署到服务器
+    name: 部署到 Render
     runs-on: ubuntu-latest
     needs: [build]
     if: github.ref == 'refs/heads/main'
     environment:
       name: production
-      url: http://your-server.com
+      # 首次部署后如果实际地址不是这个，改成 Render 控制台里的地址即可
+      url: https://my-flask-app.onrender.com
     
     steps:
-      - name: 部署到服务器
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /path/to/your/app
-            docker pull ${{ secrets.DOCKER_USERNAME }}/my-flask-app:latest
-            docker stop my-flask-app || true
-            docker rm my-flask-app || true
-            docker run -d --name my-flask-app -p 80:5000 \
-              ${{ secrets.DOCKER_USERNAME }}/my-flask-app:latest
-            docker image prune -f
-      
-      - name: 健康检查
+      - name: 触发 Render 部署
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
-          echo "等待服务启动..."
-          sleep 10
-          curl -f http://your-server.com/health || exit 1
+          curl --fail "$RENDER_DEPLOY_HOOK_URL"
+      
+      - name: 提示查看部署进度
+        run: |
+          echo "已触发 Render 部署，请到 Render Dashboard 查看 Events 和日志："
+          echo "https://dashboard.render.com"
+          echo "部署完成后访问：https://my-flask-app.onrender.com/health"

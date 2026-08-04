@@ -1,0 +1,20 @@
+# Render Blueprint（基础设施即代码）
+# 把这份文件提交到 GitHub 后，在 Render 控制台创建 Blueprint Instance，
+# Render 会按照下面的定义创建并构建服务，不需要自己购买服务器。
+#
+# 本服务的部署流程：
+#   1. GitHub Actions 完成 lint / test / build（第三阶段）
+#   2. 第四阶段通过 Deploy Hook 触发 Render 构建并部署（见 .github/workflows/ci-cd.yml）
+
+services:
+  - type: web            # 对外提供 HTTP 访问的 Web 服务
+    name: my-flask-app   # 服务名称，会体现在 https://my-flask-app.onrender.com 这样的地址里
+    runtime: docker      # 使用仓库根目录的 Dockerfile 构建镜像
+    plan: free           # 免费实例；如果账号里有付费额度可改为 starter 等
+    region: singapore    # 部署区域（离国内相对较近；也可改为 oregon / frankfurt）
+    branch: main         # 监听 main 分支
+    healthCheckPath: /health  # 健康检查路径，对应 app.py 里的 /health 接口
+    # 关闭 Render 自动部署：部署完全由 GitHub Actions 的 Deploy Hook 触发，
+    # 避免每次 push 触发两次部署。想改成 push 即自动部署，可改为 commit。
+    autoDeployTrigger: "off"
+    # 不写 dockerCommand 时，Render 使用 Dockerfile 里的 CMD 启动服务

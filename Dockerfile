@@ -17,4 +17,6 @@ USER appuser
 EXPOSE 5000
 
 # 运行应用
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
+# 优先使用环境变量 PORT（Render 等平台会自动注入，默认 10000），
+# 本地没有该变量时回退到 5000 端口，保证本地 docker run -p 5000:5000 依然可用。
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-5000} app:app"]
