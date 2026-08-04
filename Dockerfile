@@ -10,6 +10,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 复制代码
 COPY . .
 
+RUN useradd -m appuser
+USER appuser
+
 # 暴露端口
 EXPOSE 5000
 

@@ -12,6 +12,20 @@ def hello():
 def health():
     return jsonify({"status": "healthy"})
 
+@app.route("/api/time")
+def get_time():
+    from datetime import datetime
+    current_time = datetime.now().isoformat()
+    return jsonify({"current_time": current_time})
+
+@app.route("/greet/<name>")
+def greet(name):
+    return jsonify({"message": f"Hello, {name}!"})
+
+@app.route("/version")
+def version():
+    return jsonify({"version": "1.0.0"})
+
 
 if __name__ == "__main__":
     app.run(debug=True)
