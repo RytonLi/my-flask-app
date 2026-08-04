@@ -20,14 +20,15 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v5
 
-      - name: 设置 uv
-        uses: astral-sh/setup-uv@v6
-
       - name: 设置 Python
         uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'uv'
+
+      - name: 设置 uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
 
       - name: 安装依赖（含开发依赖）
         run: uv sync --frozen
@@ -51,15 +52,16 @@ jobs:
     steps:
       - name: 检出代码
         uses: actions/checkout@v5
-
-      - name: 设置 uv
-        uses: astral-sh/setup-uv@v6
       
       - name: 设置 Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'uv'
+
+      - name: 设置 uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
 
       - name: 安装依赖
         run: uv sync --frozen
