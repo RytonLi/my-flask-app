@@ -20,4 +20,4 @@ USER appuser
 
 EXPOSE 5000
 
-CMD ["uv", "run", "gunicorn", "--bind", "0.0.0.0:${PORT:-5000}", "app:app"]
+CMD ["sh", "-c", "uv run --no-sync gunicorn --bind 0.0.0.0:${PORT:-5000} app:app"]
