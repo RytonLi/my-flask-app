@@ -18,3 +18,11 @@ services:
     # 避免每次 push 触发两次部署。想改成 push 即自动部署，可改为 commit。
     autoDeployTrigger: "off"
     # 不写 dockerCommand 时，Render 使用 Dockerfile 里的 CMD 启动服务
+  - type: web
+    name: my-flask-app-staging
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: dev
+    healthCheckPath: /health
+    autoDeployTrigger: "off"
