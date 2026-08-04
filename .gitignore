@@ -18,6 +18,7 @@ venv/
 .coverage
 htmlcov/
 .pytest_cache/
+coverage.xml
 
 # 构建
 build/

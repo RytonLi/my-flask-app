@@ -1,0 +1,148 @@
+name: Python 项目 CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  # ========== 第一阶段：代码检查 ==========
+  
+  lint:
+    name: 代码检查
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'  # 启用 pip 缓存
+      
+      - name: 安装检查工具
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black mypy
+      
+      - name: 运行 flake8
+        run: flake8 .
+      
+      - name: 运行 black（检查格式）
+        run: black --check .
+      
+      - name: 运行 mypy（类型检查）
+        run: mypy . || echo "⚠️ 类型检查有警告"
+
+  # ========== 第二阶段：单元测试 ==========
+  
+  test:
+    name: 单元测试
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # 可以在多个 Python 版本上测试
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置 Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+      
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: 运行测试
+        run: |
+          pytest --cov=app --cov-report=xml --cov-report=html -v
+      
+      - name: 上传覆盖率报告
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+      
+      - name: 上传 HTML 覆盖率报告
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report-${{ matrix.python-version }}
+          path: htmlcov/
+
+  # ========== 第三阶段：构建 Docker 镜像 ==========
+  
+  build:
+    name: 构建 Docker 镜像
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置 Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: 登录 Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: 构建并推送 Docker 镜像
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/my-flask-app:latest
+            ${{ secrets.DOCKER_USERNAME }}/my-flask-app:${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/my-flask-app:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/my-flask-app:buildcache,mode=max
+
+  # ========== 第四阶段：部署（示例：部署到服务器）==========
+  
+  deploy:
+    name: 部署到服务器
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: http://your-server.com
+    
+    steps:
+      - name: 部署到服务器
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /path/to/your/app
+            docker pull ${{ secrets.DOCKER_USERNAME }}/my-flask-app:latest
+            docker stop my-flask-app || true
+            docker rm my-flask-app || true
+            docker run -d --name my-flask-app -p 80:5000 \
+              ${{ secrets.DOCKER_USERNAME }}/my-flask-app:latest
+            docker image prune -f
+      
+      - name: 健康检查
+        run: |
+          echo "等待服务启动..."
+          sleep 10
+          curl -f http://your-server.com/health || exit 1
