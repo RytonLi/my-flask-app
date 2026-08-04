@@ -28,7 +28,7 @@ def greet(name):
 
 @app.route("/version")
 def version():
-    return jsonify({"version": "1.0.1"})
+    return jsonify({"version": "1.0.2"})
 
 
 if __name__ == "__main__":

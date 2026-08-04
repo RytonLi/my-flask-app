@@ -37,4 +37,4 @@ def test_greet(client):
 def test_version(client):
     response = client.get("/version")
     assert response.status_code == 200
-    assert response.json["version"] == "1.0.1"
+    assert response.json["version"] == "1.0.2"
