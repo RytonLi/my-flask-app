@@ -110,7 +110,6 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/my-flask-app:latest
-            ${{ secrets.DOCKER_USERNAME }}/my-flask-app:${{ github.sha }}
           cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/my-flask-app:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/my-flask-app:buildcache,mode=max
 
